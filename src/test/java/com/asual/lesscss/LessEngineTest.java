@@ -50,7 +50,7 @@ public class LessEngineTest {
 	}
 	
 	@Test
-	public void compileToString() throws LessException, IOException {
+	public void compileToString() throws LessException {
 		assertEquals("body {\n  color: #f0f0f0;\n}\n", 
 				engine.compile(getUrl("test.css")));
 	}
@@ -76,7 +76,7 @@ public class LessEngineTest {
 	}
 
 	@Test
-	public void compileToStringForMultipleImports() throws LessException, IOException {
+	public void compileToStringForMultipleImports() throws LessException {
 		String expected = "body {\n" +
 				"  font-family: Arial, Helvetica;\n" +
 				"}\n" +
@@ -98,7 +98,7 @@ public class LessEngineTest {
 	}
 	
 	@Test(expected = LessException.class)
-	public void testUndefinedErrorInput() throws IOException, LessException {
+	public void testUndefinedErrorInput() throws LessException {
 		try {
 			engine.compile(getUrl("undefined-error.css"));
 		} catch (LessException e) {
@@ -109,7 +109,7 @@ public class LessEngineTest {
 	}
  
 	@Test(expected = LessException.class)
-	public void testSyntaxErrorInput() throws IOException, LessException {
+	public void testSyntaxErrorInput() throws LessException {
 		try {
 			engine.compile(getUrl("syntax-error.css"));
 		} catch (LessException e) {
@@ -119,7 +119,7 @@ public class LessEngineTest {
 	}
 	
 	@Test(expected = LessException.class)
-	public void testParseErrorInput() throws IOException, LessException {
+	public void testParseErrorInput() throws LessException {
 		try {
 			engine.compile(getUrl("parse-error.css"));
 		} catch (LessException e) {
