@@ -24,8 +24,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
@@ -33,6 +31,8 @@ import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.tools.shell.Global;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Rostislav Hristov
@@ -40,7 +40,7 @@ import org.mozilla.javascript.tools.shell.Global;
  */
 public class LessEngine {
 
-	private final Log logger = LogFactory.getLog(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private Scriptable scope;
 	private Function cs;
@@ -53,7 +53,7 @@ public class LessEngine {
 			URL less = getClass().getClassLoader().getResource("META-INF/less.js");
 			URL engine = getClass().getClassLoader().getResource("META-INF/engine.js");
 			Context cx = Context.enter();
-            logger.warn("Using implementation version: " + cx.getImplementationVersion());
+			logger.info("Using implementation version: {}", cx.getImplementationVersion());
 			cx.setOptimizationLevel(9);
 			Global global = new Global();
 			global.init(cx);		  
@@ -73,7 +73,7 @@ public class LessEngine {
 		try {
 			long time = System.currentTimeMillis();
 			String result = call(cs, new Object[] {input});
-			logger.debug("The compilation of '" + input + "' took " + (System.currentTimeMillis () - time) + " ms.");
+			logger.debug("The compilation took {} ms.", System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
 			throw parseLessException(e);
@@ -83,9 +83,9 @@ public class LessEngine {
 	public String compile(URL input) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
-            logger.debug("Compiling URL: " + input.getProtocol() + ":" + input.getFile());
+			logger.debug("Compiling URL: {}:{}", input.getProtocol(), input.getFile());
 			String result = call(cf, new Object[] {input.getProtocol() + ":" + input.getFile(), getClass().getClassLoader()});
-			logger.debug("The compilation of '" + input + "' took " + (System.currentTimeMillis () - time) + " ms.");
+			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
 			throw parseLessException(e);
@@ -95,9 +95,9 @@ public class LessEngine {
 	public String compile(File input) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
-            logger.debug("Compiling File: " + "file:" + input.getAbsolutePath());
+			logger.debug("Compiling File: file:{}", input.getAbsolutePath());
 			String result = call(cf, new Object[] {"file:" + input.getAbsolutePath(), getClass().getClassLoader()});
-			logger.debug("The compilation of '" + input + "' took " + (System.currentTimeMillis () - time) + " ms.");
+			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
 			throw parseLessException(e);
