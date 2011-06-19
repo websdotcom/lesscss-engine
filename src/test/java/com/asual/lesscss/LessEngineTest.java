@@ -26,6 +26,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.Collections;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,6 +54,18 @@ public class LessEngineTest {
 	public void compileToString() throws LessException {
 		assertEquals("body {\n  color: #f0f0f0;\n}\n", 
 				engine.compile(getUrl("test.css")));
+	}
+	
+	@Test
+	public void compileCompressed() throws LessException {
+		assertEquals("body{color:#f0f0f0;}\n",
+				engine.compile(getUrl("test.css"), Collections.singletonMap("compress", true), null));
+	}
+	
+	@Test
+	public void parseInjectedVariable() throws LessException {
+		assertEquals("div {\n  width: 6px;\n}\n",
+				engine.compile("div { width: (@injected + 1px); }", null, Collections.singletonMap("injected", 5)));
 	}
 	
 	@Test

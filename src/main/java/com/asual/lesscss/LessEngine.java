@@ -23,13 +23,17 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextAction;
+import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.WrapFactory;
 import org.mozilla.javascript.tools.shell.Global;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +45,7 @@ import org.slf4j.LoggerFactory;
 public class LessEngine {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final FunctionContextFactory contextFactory = new FunctionContextFactory();
 
 	private Scriptable scope;
 	private Function cs;
@@ -70,9 +75,13 @@ public class LessEngine {
 	}
 	
 	public String compile(String input) throws LessException {
+		return compile(input, null, null);
+	}
+	
+	public String compile(String input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
-			String result = call(cs, new Object[] {input});
+			String result = call(cs, new Object[] {input, options, variables});
 			logger.debug("The compilation took {} ms.", System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
@@ -81,10 +90,14 @@ public class LessEngine {
 	}
 	
 	public String compile(URL input) throws LessException {
+		return compile(input, null, null);
+	}
+	
+	public String compile(URL input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling URL: {}:{}", input.getProtocol(), input.getFile());
-			String result = call(cf, new Object[] {input.getProtocol() + ":" + input.getFile(), getClass().getClassLoader()});
+			String result = call(cf, new Object[] {input.getProtocol() + ":" + input.getFile(), getClass().getClassLoader(), options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
@@ -93,10 +106,14 @@ public class LessEngine {
 	}
 	
 	public String compile(File input) throws LessException {
+		return compile(input, null, null);
+	}
+	
+	public String compile(File input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling File: file:{}", input.getAbsolutePath());
-			String result = call(cf, new Object[] {"file:" + input.getAbsolutePath(), getClass().getClassLoader()});
+			String result = call(cf, new Object[] {"file:" + input.getAbsolutePath(), getClass().getClassLoader(), options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
@@ -119,7 +136,7 @@ public class LessEngine {
 	}
 
 	private synchronized String call(Function fn, Object[] args) {
-		return (String) Context.call(null, fn, scope, scope, args);
+		return contextFactory.call(fn, scope, args);
 	}
 	
 	private LessException parseLessException(Exception root) throws LessException {
@@ -159,7 +176,8 @@ public class LessEngine {
 				
 				int line = -1;
 				if (ScriptableObject.hasProperty(value, "line")) {
-					line = ((Double) ScriptableObject.getProperty(value, "line")).intValue(); 
+					Double lineValue = (Double) ScriptableObject.getProperty(value, "line");
+					if (lineValue != null) line = lineValue.intValue();
 				}
 				
 				int column = -1;
@@ -183,6 +201,37 @@ public class LessEngine {
 		}
 		
 		throw new LessException(root);
+	}
+	
+	private static final class FunctionContextFactory extends ContextFactory {
+		
+		private final WrapFactory wrapFactory = new CustomWrapFactory();
+		
+		FunctionContextFactory() {
+			wrapFactory.setJavaPrimitiveWrap(false);
+		}
+		
+		String call(final Function fn, final Scriptable scope, final Object[] args) {
+			return (String) call(new ContextAction() {
+				
+				public Object run(Context cx) {
+					for (int i = 0; i < args.length; ++i) {
+						args[i] = wrapFactory.wrap(cx, scope, args[i], null);
+					}
+					
+					return fn.call(cx, scope, scope, args);
+				}
+				
+			});
+		}
+		
+		@Override
+		public Context makeContext() {
+			Context cx = super.makeContext();
+			cx.setWrapFactory(wrapFactory);
+			return cx;
+		}
+		
 	}
 	
 }
