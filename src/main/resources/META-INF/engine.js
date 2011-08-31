@@ -8,13 +8,30 @@ var compileString = function(css, options, variables) {
     return result;    
 };
 
+var canonicalizePath = function(path) {
+	var cPath = path.replace('/./', '/');
+	var collapsible = new RegExp('/([\\w-]{0,2}|[\\w\\.-]{3,})/\\.\\./');
+	var invalid = new RegExp('(^|/)\\.\\.(/|$)');
+	var oldPath = cPath;
+	cPath = cPath.replace(collapsible, '/');
+	var loopCount = 0;
+	while (cPath != oldPath && loopCount++ < 100) {
+		oldPath = cPath;
+		cPath = cPath.replace(collapsible, '/');
+	}
+	if (loopCount >= 100 || cPath.search(invalid) > -1) {
+		throw "Unable to normalize path " + path;
+	}
+	return cPath;
+};
+
 var compileFile = function(file, classLoader, options, variables) {
     var result, charset = 'UTF-8', cp = 'classpath:', dirname = file.replace(/\\/g, '/').replace(/[^\/]+$/, '');
     window.less.Parser.importer = function(path, paths, fn) {
         if (path.indexOf(cp) == 0) {
             path = classLoader.getResource(path.replace(cp, ''));
         } else if (path.substr(0, 1) != '/') {
-            path = dirname + path;
+            path = canonicalizePath(dirname + path);
         }
         new(window.less.Parser)({ optimization: 1 }).parse(readUrl(path, charset).replace(/\r/g, ''), function (e, root) {
             fn(root);

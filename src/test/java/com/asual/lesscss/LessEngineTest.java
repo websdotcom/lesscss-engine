@@ -109,6 +109,14 @@ public class LessEngineTest {
 				"}\n";
 		assertEquals(expected, engine.compile(getUrl("multiple-imports.css")));
 	}
+
+	@Test
+	public void testCompileToStringForImportFromParentDirectory() throws LessException {
+		String expected = "body {\n" +
+				"  color: #f0f0f0;\n" +
+				"}\n";
+		assertEquals(expected, engine.compile(getUrl("subdir/parent-dir-import.css")));
+	}
 	
 	@Test(expected = LessException.class)
 	public void testUndefinedErrorInput() throws LessException {
