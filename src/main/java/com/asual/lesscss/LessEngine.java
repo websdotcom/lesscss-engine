@@ -52,11 +52,11 @@ public class LessEngine {
 	private Function cf;
 	
 	public LessEngine() {
+		Context cx = Context.enter();
 		try {
 			logger.debug("Initializing LESS Engine.");
 			URL less = getClass().getClassLoader().getResource("META-INF/less.js");
 			URL engine = getClass().getClassLoader().getResource("META-INF/engine.js");
-			Context cx = Context.enter();
 			logger.info("Using implementation version: {}", cx.getImplementationVersion());
 			cx.setOptimizationLevel(9);
 			Global global = new Global();
@@ -66,9 +66,10 @@ public class LessEngine {
 			cx.evaluateReader(scope, new InputStreamReader(engine.openConnection().getInputStream()), engine.getFile(), 1, null);
 			cs = (Function) scope.get("compileString", scope);
 			cf = (Function) scope.get("compileFile", scope);
-			Context.exit();
 		} catch (Exception e) {
 			logger.error("LESS Engine intialization failed.", e);
+		} finally {
+			Context.exit();
 		}
 	}
 	
