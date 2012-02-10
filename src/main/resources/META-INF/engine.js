@@ -26,21 +26,21 @@ var canonicalizePath = function(path) {
 	return cPath;
 };
 
-var compileFile = function(file, classLoader, options, variables) {
+var compileFile = function(file, resourceLoader, options, variables) {
     var result, charset = 'UTF-8', cp = 'classpath:', dirname = file.replace(/\\/g, '/').replace(/[^\/]+$/, '');
     lessParser.importer = function(path, paths, fn) {
         if (path.indexOf(cp) == 0) {
-            path = classLoader.getResource(path.replace(cp, ''));
+            path = resourceLoader.getResource(path.replace(cp, ''));
         } else if (path.substr(0, 1) != '/') {
             path = canonicalizePath(dirname + path);
         }
-        new(lessParser)({ optimization: 1 }).parse(readUrl(path, charset).replace(/\r/g, ''), function (e, root) {
+        new(lessParser)({ optimization: 1 }).parse(resourceLoader.readUrl(path, charset).replace(/\r/g, ''), function (e, root) {
             fn(root);
             if (e instanceof Object)
                 throw e;
         });
     };
-    new(lessParser)({ optimization: 1 }).parse(readUrl(file, charset).replace(/\r/g, ''), function (e, root) {
+    new(lessParser)({ optimization: 1 }).parse(resourceLoader.readUrl(file, charset).replace(/\r/g, ''), function (e, root) {
         result = root.toCSS(options, convertVariables(variables));
         if (e instanceof Object)
             throw e;

@@ -76,7 +76,7 @@ public class LessEngine {
 	public String compile(String input) throws LessException {
 		return compile(input, null, null);
 	}
-	
+
 	public String compile(String input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
@@ -93,10 +93,18 @@ public class LessEngine {
 	}
 	
 	public String compile(URL input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
+		return compile(input, options, variables, new LessEngineResourceLoaderDefaultImpl());
+	}
+
+	public String compile(URL input, Map<String, ?> options, Map<String, ?> variables, LessEngineResourceLoader resourceLoader) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling URL: {}:{}", input.getProtocol(), input.getFile());
-			String result = call(cf, new Object[] {input.getProtocol() + ":" + input.getFile(), getClass().getClassLoader(), options, variables});
+			String location = input.getProtocol() + ":";
+			if (!"".equals(input.getHost()))
+				location += "//" + input.getHost();
+			location += input.getFile();
+			String result = call(cf, new Object[] {location, resourceLoader, options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
@@ -109,10 +117,14 @@ public class LessEngine {
 	}
 	
 	public String compile(File input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
+		return compile(input, options, variables, new LessEngineResourceLoaderDefaultImpl());
+	}
+
+	public String compile(File input, Map<String, ?> options, Map<String, ?> variables, LessEngineResourceLoader resourceLoader) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling File: file:{}", input.getAbsolutePath());
-			String result = call(cf, new Object[] {"file:" + input.getAbsolutePath(), getClass().getClassLoader(), options, variables});
+			String result = call(cf, new Object[] {"file:" + input.getAbsolutePath(), resourceLoader, options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
