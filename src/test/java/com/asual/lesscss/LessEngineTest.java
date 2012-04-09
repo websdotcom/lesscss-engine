@@ -176,6 +176,19 @@ public class LessEngineTest {
 	}
 
 	@Test
+	public void testGuardExpressions() throws LessException {
+		String expected = ".class1 {\n" +
+		    "  background-color: black;\n" +
+		    "  color: #dddddd;\n" +
+		    "}\n" +
+		    ".class2 {\n" +
+		    "  background-color: white;\n" +
+		    "  color: #555555;\n" +
+		    "}\n";
+		assertEquals(expected, engine.compile(getResource("less/guard.less")));
+	}
+
+	@Test
 	public void testSample() throws LessException {
 	    String expected = ".box {\n" + 
 			"  color: #fe33ac;\n" + 
