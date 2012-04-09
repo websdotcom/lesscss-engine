@@ -1,6 +1,4 @@
 /*
- * Copyright 2009 the original author or authors.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,29 +35,38 @@ import org.junit.Test;
  * @author Eliot Sykes
  */
 public class LessEngineTest {
-	
+
 	private static LessEngine engine;
-	
+
 	@BeforeClass
 	public static void before() {
-		engine = new LessEngine();
+		LessOptions options = new LessOptions();
+		options.setCss(true);
+		engine = new LessEngine(options);
 	}
-	
+
 	@Test
-	public void parse() throws LessException {
+	public void compileString() throws LessException {
 		assertEquals("div {\n  width: 2;\n}\n", engine.compile("div { width: 1 + 1 }"));
 	}
-	
+
+	@Test
+	public void compileStringWithImport() throws LessException {
+		String path = getResource("less/import.less").getPath();
+		assertEquals("body {\n  color: #f0f0f0;\n}\n", 
+				engine.compile("@import url('" + path + "'); body { color: @color; }"));
+	}
+
 	@Test
 	public void compileToString() throws LessException {
-		assertEquals("body {\n  color: #f0f0f0;\n}\n", 
-				engine.compile(getUrl("test.css")));
+		assertEquals("body {\n  color: #f0f0f0;\n}\n",
+				engine.compile(getResource("less/classpath.less")));
 	}
-	
+
 	@Test
-	public void compileCompressed() throws LessException {
-		assertEquals("body{color:#f0f0f0;}\n",
-				engine.compile(getUrl("test.css"), Collections.singletonMap("compress", true), null));
+	public void compileToCompressedString() throws LessException {
+		assertEquals("body{color:#f0f0f0}",
+				engine.compile(getResource("less/classpath.less"), LessEngine.ENABLE_COMPRESSION, null));
 	}
 	
 	@Test
@@ -71,9 +78,9 @@ public class LessEngineTest {
 	@Test
 	public void compileToFile() throws LessException, IOException {
 		File tempDir = new File(System.getProperty("java.io.tmpdir"));
-		File tempFile = File.createTempFile("less.css", null, tempDir);
+		File tempFile = File.createTempFile("classpath.less", null, tempDir);
 		engine.compile(
-				new File(getUrl("test.css").getPath()),
+				new File(getResource("less/classpath.less").getPath()),
 				new File(tempFile.getAbsolutePath()));
 		FileInputStream fstream = new FileInputStream(tempFile.getAbsolutePath());
 		DataInputStream in = new DataInputStream(fstream);
@@ -91,7 +98,7 @@ public class LessEngineTest {
 	@Test
 	public void compileToStringForMultipleImports() throws LessException {
 		String expected = "body {\n" +
-				"  font-family: Arial, Helvetica;\n" +
+				"  font-family: 'Helvetica Neue', Arial, sans-serif;\n" +
 				"}\n" +
 				"body {\n" +
 				"  width: 960px;\n" +
@@ -107,42 +114,76 @@ public class LessEngineTest {
 				"  -webkit-border-radius: 10px;\n" +
 				"  -moz-border-radius: 10px;\n" +
 				"}\n";
-		assertEquals(expected, engine.compile(getUrl("multiple-imports.css")));
+		assertEquals(expected, engine.compile(getResource("css/multiple-imports.css")));
+	}
+
+	@Test
+	public void compileToCompressedStringForMultipleImports() throws LessException {
+		String expected = "body{font-family:'Helvetica Neue',Arial,sans-serif}body{width:960px;margin:0}" + 
+				"#header{border-radius:5px;-webkit-border-radius:5px;-moz-border-radius:5px}" + 
+				"#footer{border-radius:10px;-webkit-border-radius:10px;-moz-border-radius:10px}";
+		assertEquals(expected, engine.compile(getResource("css/multiple-imports.css"), true));
+	}
+
+	@Test
+	public void compileImages() throws LessException {
+		String expected = ".logo {\n" + 
+			"  background-image: url(../img/logo.png);\n" + 
+			"}\n";
+		assertEquals(expected, engine.compile(getResource("less/img.less")));
 	}
 	
-	@Test(expected = LessException.class)
-	public void testUndefinedErrorInput() throws LessException {
-		try {
-			engine.compile(getUrl("undefined-error.css"));
-		} catch (LessException e) {
-			assertTrue("is undefined error", e.getMessage().contains("Error: .bgColor is undefined (line 2, column 4)"));
-			throw e;
-		}
-		
+	@Test
+	public void compileSubdirImports() throws LessException {
+		engine.compile(getResource("less/root.less"));
+		engine.compile(getResource("less/subdir/import-from-root.less"));
+		engine.compile(getResource("less/import-from-subdir.less"));
 	}
- 
+
 	@Test(expected = LessException.class)
-	public void testSyntaxErrorInput() throws LessException {
+	public void testNameErrorInput() throws LessException {
 		try {
-			engine.compile(getUrl("syntax-error.css"));
+			engine.compile(getResource("less/name-error.less"));
 		} catch (LessException e) {
-			assertTrue("is syntax error", e.getMessage().contains("Syntax Error: Missing closing `}` (line -1, column -1)"));
+			assertTrue("Name Error", e.getMessage().contains("Name Error: .bgColor is undefined (line 2, column 4)"));
 			throw e;
 		}
 	}
-	
+
 	@Test(expected = LessException.class)
 	public void testParseErrorInput() throws LessException {
 		try {
-			engine.compile(getUrl("parse-error.css"));
+			engine.compile(getResource("less/parse-error.less"));
 		} catch (LessException e) {
-			assertTrue("is parse error", e.getMessage().contains("Parse Error: Syntax Error on line 2"));
+			assertTrue("Parse Error", e.getMessage().contains("Parse Error: Syntax Error on line 2"));
 			throw e;
 		}
 	}
 	
-	private URL getUrl(String filename) {
-		return getClass().getClassLoader().getResource("META-INF/" + filename);
+	@Test
+	public void testImportWithUrl() throws LessException {
+	    String expected = "a {\n  color: #dddddd;\n  background-image: url(img/logo.png);\n}\n";
+	    String result = engine.compile(getResource("less/import-from-subdir.less"));
+	    assertEquals(expected, result);
+	}
+	
+	@Test
+	public void testSample() throws LessException {
+	    String expected = ".box {\n" + 
+			"  color: #fe33ac;\n" + 
+			"  border-color: #fdcdea;\n" + 
+			"}\n" + 
+			".box div {\n" + 
+			"  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);\n" + 
+			"  -webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);\n" + 
+			"  -moz-box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);\n" + 
+			"}\n";
+	    String result = engine.compile(getResource("less/sample.less"));
+	    assertEquals(expected, result);
+	}
+	
+	private URL getResource(String path) {
+		return getClass().getClassLoader().getResource("META-INF/" + path);
 	}
 
 }
