@@ -24,6 +24,14 @@ if (lessenv.css) {
 		}
 		return content.replace(/\.css/g, '.less');
 	};
+} else {
+	var existingReadUrl = readUrl;
+	readUrl = function(url, charset, resourceLoader) {
+		if (resourceLoader)
+			return resourceLoader.readUrl(url, charset);
+		else
+			existingReadUrl(url, charset);
+	}
 }
 
 var compileString = function(css, options, variables) {

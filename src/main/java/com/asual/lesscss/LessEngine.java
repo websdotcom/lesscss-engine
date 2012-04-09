@@ -124,7 +124,11 @@ public class LessEngine {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling URL: {}:{}", input.getProtocol(), input.getFile());
-			String result = call(compileFile, new Object[] {input.getProtocol() + ":" + input.getFile(), resourceLoader, options, variables});
+			String location = input.getProtocol() + ":";
+			if (!"".equals(input.getHost()))
+				location += "//" + input.getHost();
+			location += input.getFile();
+			String result = call(compileFile, new Object[] {location, resourceLoader, options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
