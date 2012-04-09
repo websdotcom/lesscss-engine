@@ -166,7 +166,28 @@ public class LessEngineTest {
 	    String result = engine.compile(getResource("less/import-from-subdir.less"));
 	    assertEquals(expected, result);
 	}
-	
+
+	@Test
+	public void testCompileToStringForImportFromParentDirectory() throws LessException {
+		String expected = "body {\n" +
+		    "  color: #f0f0f0;\n" +
+		    "}\n";
+		assertEquals(expected, engine.compile(getResource("less/subdir/parent-dir-import.less")));
+	}
+
+	@Test
+	public void testGuardExpressions() throws LessException {
+		String expected = ".class1 {\n" +
+		    "  background-color: black;\n" +
+		    "  color: #dddddd;\n" +
+		    "}\n" +
+		    ".class2 {\n" +
+		    "  background-color: white;\n" +
+		    "  color: #555555;\n" +
+		    "}\n";
+		assertEquals(expected, engine.compile(getResource("less/guard.less")));
+	}
+
 	@Test
 	public void testSample() throws LessException {
 	    String expected = ".box {\n" + 

@@ -61,6 +61,7 @@ public class LessEngine {
 	}
 	
 	public LessEngine(LessOptions options) {
+		Context cx = Context.enter();
 		try {
 			logger.debug("Initializing LESS Engine.");
 			classLoader = getClass().getClassLoader();
@@ -68,7 +69,6 @@ public class LessEngine {
 			URL env = classLoader.getResource("META-INF/env.js");
 			URL engine = classLoader.getResource("META-INF/engine.js");
 			URL cssmin = classLoader.getResource("META-INF/cssmin.js");
-			Context cx = Context.enter();
 			logger.debug("Using implementation version: {}", cx.getImplementationVersion());
 			cx.setOptimizationLevel(9);
 			Global global = new Global();
@@ -82,9 +82,10 @@ public class LessEngine {
 			cx.evaluateReader(scope, new InputStreamReader(engine.openConnection().getInputStream()), engine.getFile(), 1, null);
 			compileString = (Function) scope.get("compileString", scope);
 			compileFile = (Function) scope.get("compileFile", scope);
-			Context.exit();
 		} catch (Exception e) {
 			logger.error("LESS Engine intialization failed.", e);
+		} finally {
+			Context.exit();
 		}
 	}
 	
@@ -116,10 +117,18 @@ public class LessEngine {
 	}
 	
 	public String compile(URL input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
+		return compile(input, options, variables, new LessEngineResourceLoaderDefaultImpl());
+	}
+
+	public String compile(URL input, Map<String, ?> options, Map<String, ?> variables, LessEngineResourceLoader resourceLoader) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling URL: {}:{}", input.getProtocol(), input.getFile());
-			String result = call(compileFile, new Object[] {input.getProtocol() + ":" + input.getFile(), classLoader, options, variables});
+			String location = input.getProtocol() + ":";
+			if (!"".equals(input.getHost()))
+				location += "//" + input.getHost();
+			location += input.getFile();
+			String result = call(compileFile, new Object[] {location, resourceLoader, options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
@@ -136,10 +145,14 @@ public class LessEngine {
 	}
 	
 	public String compile(File input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
+		return compile(input, options, variables, new LessEngineResourceLoaderDefaultImpl());
+	}
+
+	public String compile(File input, Map<String, ?> options, Map<String, ?> variables, LessEngineResourceLoader resourceLoader) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling File: file:{}", input.getAbsolutePath());
-			String result = call(compileFile, new Object[] {"file:" + input.getAbsolutePath(), classLoader, options, variables});
+			String result = call(compileFile, new Object[] {"file:" + input.getAbsolutePath(), resourceLoader, options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
@@ -156,8 +169,12 @@ public class LessEngine {
 	}
 	
 	public void compile(File input, File output, Map<String, ?> options, Map<String, ?> variables) throws LessException, IOException {
+		compile(input, output, options, variables, new LessEngineResourceLoaderDefaultImpl());
+	}
+
+	public void compile(File input, File output, Map<String, ?> options, Map<String, ?> variables, LessEngineResourceLoader resourceLoader) throws LessException, IOException {
 		try {
-			String content = compile(input, options, variables);
+		    String content = compile(input, options, variables, resourceLoader);
 			if (!output.exists()) {
 				output.createNewFile();
 			}
