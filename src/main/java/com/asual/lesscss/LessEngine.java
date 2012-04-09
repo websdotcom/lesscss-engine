@@ -61,6 +61,7 @@ public class LessEngine {
 	}
 	
 	public LessEngine(LessOptions options) {
+		Context cx = Context.enter();
 		try {
 			logger.debug("Initializing LESS Engine.");
 			classLoader = getClass().getClassLoader();
@@ -68,7 +69,6 @@ public class LessEngine {
 			URL env = classLoader.getResource("META-INF/env.js");
 			URL engine = classLoader.getResource("META-INF/engine.js");
 			URL cssmin = classLoader.getResource("META-INF/cssmin.js");
-			Context cx = Context.enter();
 			logger.debug("Using implementation version: {}", cx.getImplementationVersion());
 			cx.setOptimizationLevel(9);
 			Global global = new Global();
@@ -82,9 +82,10 @@ public class LessEngine {
 			cx.evaluateReader(scope, new InputStreamReader(engine.openConnection().getInputStream()), engine.getFile(), 1, null);
 			compileString = (Function) scope.get("compileString", scope);
 			compileFile = (Function) scope.get("compileFile", scope);
-			Context.exit();
 		} catch (Exception e) {
 			logger.error("LESS Engine intialization failed.", e);
+		} finally {
+			Context.exit();
 		}
 	}
 	
