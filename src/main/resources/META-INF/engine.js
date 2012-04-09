@@ -42,6 +42,24 @@ var compileString = function(css, options, variables) {
 	return result;
 };
 
+var canonicalizePath = function(path) {
+	var cPath = path.replace('/./', '/');
+	var collapsible = new RegExp('/([\\w-]{0,2}|[\\w\\.-]{3,})/\\.\\./');
+	var invalid = new RegExp('(^|/)\\.\\.(/|$)');
+	var oldPath = cPath;
+	cPath = cPath.replace(collapsible, '/');
+	var loopCount = 0;
+	while (cPath != oldPath && loopCount++ < 100) {
+		oldPath = cPath;
+		cPath = cPath.replace(collapsible, '/');
+	}
+	if (loopCount >= 100 || cPath.search(invalid) > -1) {
+		throw "Unable to normalize path " + path;
+	}
+	return cPath;
+};
+
+
 var compileFile = function(file, classLoader, options, variables) {
 	var result, cp = 'classpath:';
 	less.Parser.importer = function(path, paths, fn) {
@@ -53,7 +71,7 @@ var compileFile = function(file, classLoader, options, variables) {
 				path = resource;
 			}
 		} else if (!/^\//.test(path)) {
-			path = paths[0] + path;
+			path = canonicalizePath(paths[0] + path);
 		}
 		if (path != null) {
 			new(less.Parser)({ optimization: 1, paths: [String(path).replace(/[\w\.-]+$/, '')] }).parse(readUrl(path, lessenv.charset).replace(/\r/g, ''), function (e, root) {
