@@ -4,15 +4,23 @@ readFile = lessenv.readFile;
 delete arguments;
 
 if (lessenv.css) {
-	readUrl = function(url, charset) {
+	readUrl = function(url, charset, resourceLoader) {
 		var content;
 		if (!/^\w+:/.test(url)) {
 			url = 'file:' + url;
 		}
-		try {
-			content = lessenv.readUrl.apply(this, arguments);
-		} catch (e) {
-			content = lessenv.readUrl.apply(this, [url.replace(/\.less$/, '.css'), charset]);
+		if (resourceLoader) {
+			try {
+				content = resourceLoader.readUrl(url, charset);
+			} catch (e) {
+				content = resourceLoader.readUrl(url.replace(/\.less$/, '.css'), charset);
+			}
+		} else {
+			try {
+				content = lessenv.readUrl.apply(this, arguments);
+			} catch (e) {
+				content = lessenv.readUrl.apply(this, [url.replace(/\.less$/, '.css'), charset]);
+			}
 		}
 		return content.replace(/\.css/g, '.less');
 	};
@@ -60,13 +68,13 @@ var canonicalizePath = function(path) {
 };
 
 
-var compileFile = function(file, classLoader, options, variables) {
+var compileFile = function(file, resourceLoader, options, variables) {
 	var result, cp = 'classpath:';
 	less.Parser.importer = function(path, paths, fn) {
 		if (path.indexOf(cp) != -1) {
-			var resource = classLoader.getResource(path.replace(new RegExp('^.*' + cp), ''));
-			if (lessenv.css && resource === null) {
-				path = classLoader.getResource(path.replace(new RegExp('^.*' + cp), '').replace(/\.less$/, '.css'));
+			var resource = String(resourceLoader.getResource(path.replace(new RegExp('^.*' + cp), '')));
+			if (lessenv.css && (!resource || resource == "null")) {
+				path = String(resourceLoader.getResource(path.replace(new RegExp('^.*' + cp), '').replace(/\.less$/, '.css')));
 			} else {
 				path = resource;
 			}
@@ -74,14 +82,14 @@ var compileFile = function(file, classLoader, options, variables) {
 			path = canonicalizePath(paths[0] + path);
 		}
 		if (path != null) {
-			new(less.Parser)({ optimization: 1, paths: [String(path).replace(/[\w\.-]+$/, '')] }).parse(readUrl(path, lessenv.charset).replace(/\r/g, ''), function (e, root) {
+			new(less.Parser)({ optimization: 1, paths: [String(path).replace(/[\w\.-]+$/, '')] }).parse(readUrl(path, lessenv.charset, resourceLoader).replace(/\r/g, ''), function (e, root) {
 				fn(e, root);
 				if (e instanceof Object)
 					throw e;
 			});
 		}
 	};
-	new(less.Parser)({ optimization: 1, paths: [file.replace(/[\w\.-]+$/, '')] }).parse(readUrl(file, lessenv.charset).replace(/\r/g, ''), function (e, root) {
+	new(less.Parser)({ optimization: 1, paths: [file.replace(/[\w\.-]+$/, '')] }).parse(readUrl(file, lessenv.charset, resourceLoader).replace(/\r/g, ''), function (e, root) {
 		result = root.toCSS(options, convertVariables(variables));
 		if (options && options.compress)
 			result = exports.compressor.cssmin(result);

@@ -117,10 +117,14 @@ public class LessEngine {
 	}
 	
 	public String compile(URL input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
+		return compile(input, options, variables, new LessEngineResourceLoaderDefaultImpl());
+	}
+
+	public String compile(URL input, Map<String, ?> options, Map<String, ?> variables, LessEngineResourceLoader resourceLoader) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling URL: {}:{}", input.getProtocol(), input.getFile());
-			String result = call(compileFile, new Object[] {input.getProtocol() + ":" + input.getFile(), classLoader, options, variables});
+			String result = call(compileFile, new Object[] {input.getProtocol() + ":" + input.getFile(), resourceLoader, options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
@@ -137,10 +141,14 @@ public class LessEngine {
 	}
 	
 	public String compile(File input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
+		return compile(input, options, variables, new LessEngineResourceLoaderDefaultImpl());
+	}
+
+	public String compile(File input, Map<String, ?> options, Map<String, ?> variables, LessEngineResourceLoader resourceLoader) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling File: file:{}", input.getAbsolutePath());
-			String result = call(compileFile, new Object[] {"file:" + input.getAbsolutePath(), classLoader, options, variables});
+			String result = call(compileFile, new Object[] {"file:" + input.getAbsolutePath(), resourceLoader, options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
@@ -157,8 +165,12 @@ public class LessEngine {
 	}
 	
 	public void compile(File input, File output, Map<String, ?> options, Map<String, ?> variables) throws LessException, IOException {
+		compile(input, output, options, variables, new LessEngineResourceLoaderDefaultImpl());
+	}
+
+	public void compile(File input, File output, Map<String, ?> options, Map<String, ?> variables, LessEngineResourceLoader resourceLoader) throws LessException, IOException {
 		try {
-			String content = compile(input, options, variables);
+		    String content = compile(input, options, variables, resourceLoader);
 			if (!output.exists()) {
 				output.createNewFile();
 			}
