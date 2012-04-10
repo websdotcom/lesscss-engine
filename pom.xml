@@ -5,13 +5,18 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.webs.asual.lesscss</groupId>
+    <groupId>com.asual.lesscss</groupId>
     <artifactId>lesscss-engine</artifactId>
     <packaging>jar</packaging>
     <name>LESS Engine</name>
-    <version>1.1.7</version>
+    <version>1.1.3</version>
     <description>A Java wrapper for LESS (http://lesscss.org). LESS extends CSS with: variables, mixins, operations and nested rules.</description>
     <url>http://www.asual.com/lesscss</url>
+    
+    <scm>
+        <url>http://github.com/asual/lesscss-engine</url>
+        <connection>scm:git:git://github.com/asual/lesscss-engine.git</connection>
+    </scm>
     
     <licenses>
         <license>
@@ -21,20 +26,13 @@
         </license>
     </licenses>
     
-	<distributionManagement>
-		<repository>
-			<id>nexus</id>
-			<name>Webs Nexus Repository</name>
-			<url>http://nexus.freewebs.com:9999/nexus/content/repositories/releases</url>
-			<uniqueVersion>false</uniqueVersion>
-		</repository>
-		<snapshotRepository>
-			<id>nexus</id>
-			<name>Webs Nexus Repository</name>
-			<url>http://nexus.freewebs.com:9999/nexus/content/repositories/snapshots</url>
-			<uniqueVersion>false</uniqueVersion>
-		</snapshotRepository>
-	</distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>com.asual.repositories.releases</id>
+            <name>Asual Releases Repository</name>
+            <url>http://www.asual.com/maven/content/repositories/releases</url>
+        </repository>
+    </distributionManagement>
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,7 +43,7 @@
         <dependency>
             <groupId>rhino</groupId>
             <artifactId>js</artifactId>
-            <version>1.7R2</version>
+            <version>1.6R7</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

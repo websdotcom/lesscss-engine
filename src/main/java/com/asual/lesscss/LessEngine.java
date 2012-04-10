@@ -52,31 +52,32 @@ public class LessEngine {
 	private Function cf;
 	
 	public LessEngine() {
-		Context cx = Context.enter();
 		try {
 			logger.debug("Initializing LESS Engine.");
+			URL browser = getClass().getClassLoader().getResource("META-INF/browser.js");
 			URL less = getClass().getClassLoader().getResource("META-INF/less.js");
 			URL engine = getClass().getClassLoader().getResource("META-INF/engine.js");
+			Context cx = Context.enter();
 			logger.info("Using implementation version: {}", cx.getImplementationVersion());
 			cx.setOptimizationLevel(9);
 			Global global = new Global();
 			global.init(cx);		  
 			scope = cx.initStandardObjects(global);
+			cx.evaluateReader(scope, new InputStreamReader(browser.openConnection().getInputStream()), browser.getFile(), 1, null);
 			cx.evaluateReader(scope, new InputStreamReader(less.openConnection().getInputStream()), less.getFile(), 1, null);
 			cx.evaluateReader(scope, new InputStreamReader(engine.openConnection().getInputStream()), engine.getFile(), 1, null);
 			cs = (Function) scope.get("compileString", scope);
 			cf = (Function) scope.get("compileFile", scope);
+			Context.exit();
 		} catch (Exception e) {
 			logger.error("LESS Engine intialization failed.", e);
-		} finally {
-			Context.exit();
 		}
 	}
 	
 	public String compile(String input) throws LessException {
 		return compile(input, null, null);
 	}
-
+	
 	public String compile(String input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
@@ -93,18 +94,10 @@ public class LessEngine {
 	}
 	
 	public String compile(URL input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
-		return compile(input, options, variables, new LessEngineResourceLoaderDefaultImpl());
-	}
-
-	public String compile(URL input, Map<String, ?> options, Map<String, ?> variables, LessEngineResourceLoader resourceLoader) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling URL: {}:{}", input.getProtocol(), input.getFile());
-			String location = input.getProtocol() + ":";
-			if (!"".equals(input.getHost()))
-				location += "//" + input.getHost();
-			location += input.getFile();
-			String result = call(cf, new Object[] {location, resourceLoader, options, variables});
+			String result = call(cf, new Object[] {input.getProtocol() + ":" + input.getFile(), getClass().getClassLoader(), options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
@@ -117,14 +110,10 @@ public class LessEngine {
 	}
 	
 	public String compile(File input, Map<String, ?> options, Map<String, ?> variables) throws LessException {
-		return compile(input, options, variables, new LessEngineResourceLoaderDefaultImpl());
-	}
-
-	public String compile(File input, Map<String, ?> options, Map<String, ?> variables, LessEngineResourceLoader resourceLoader) throws LessException {
 		try {
 			long time = System.currentTimeMillis();
 			logger.debug("Compiling File: file:{}", input.getAbsolutePath());
-			String result = call(cf, new Object[] {"file:" + input.getAbsolutePath(), resourceLoader, options, variables});
+			String result = call(cf, new Object[] {"file:" + input.getAbsolutePath(), getClass().getClassLoader(), options, variables});
 			logger.debug("The compilation of '{}' took {} ms.", input, System.currentTimeMillis() - time);
 			return result;
 		} catch (Exception e) {
